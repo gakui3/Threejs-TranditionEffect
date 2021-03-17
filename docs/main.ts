@@ -42,7 +42,6 @@ function init() {
   document.body.appendChild(renderer.domElement);
   scene = new THREE.Scene();
   scene.background = new THREE.Color(0x424242);
-
   clock = new THREE.Clock();
   clock.start();
 }
