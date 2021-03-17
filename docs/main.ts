@@ -29,8 +29,8 @@ const param = {
   loopTransition: false,
   effect: 'effect1',
 
-  speed: 10.0,
-  blockSize: 30.0,
+  speed: 50.0,
+  blockSize: 15.0,
   maxOffsetX: 10.0,
   maxOffsetY: 10.0,
 };
