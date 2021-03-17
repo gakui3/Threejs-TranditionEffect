@@ -1,4 +1,4 @@
-https://gakui3.github.io/TranditionEffect/.
+https://gakui3.github.io/TranditionEffect/
 
 
 install  
