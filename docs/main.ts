@@ -18,7 +18,9 @@ let gui: GUI,
   texture2,
   camera,
   canvas,
+  renderer,
   geometry;
+
 const param = {
   jitterAmount: 100.0,
   chromaticaberrationAmount: 1.0,
@@ -32,6 +34,36 @@ const param = {
   maxOffsetX: 10.0,
   maxOffsetY: 10.0,
 };
+
+function init() {
+  canvas = document.querySelector('#c');
+  renderer = new THREE.WebGLRenderer({ canvas });
+  //renderer.setSize(800, 600);
+  document.body.appendChild(renderer.domElement);
+  scene = new THREE.Scene();
+  scene.background = new THREE.Color(0x424242);
+
+  clock = new THREE.Clock();
+  clock.start();
+}
+
+function update() {
+  requestAnimationFrame(update);
+
+  if (resizeRendererToDisplaySize(renderer)) {
+    const canvas = renderer.domElement;
+    camera.aspect = canvas.clientWidth / canvas.clientHeight;
+    camera.updateProjectionMatrix();
+  }
+
+  let time = performance.now() * 0.001;
+  time = Math.sin(time);
+  mat1.uniforms.time.value = time;
+  mat2.uniforms.time.value = time;
+
+  transitionAnimation(clock.getDelta() * 3);
+  renderer.render(scene, camera);
+}
 
 function addGUI() {
   gui = new GUI();
@@ -77,18 +109,6 @@ function addGUI() {
   });
 }
 
-function resizeRendererToDisplaySize(renderer) {
-  const canvas = renderer.domElement;
-  const pixelRatio = window.devicePixelRatio;
-  const width = canvas.clientWidth;
-  const height = canvas.clientHeight;
-  const needResize = canvas.width !== width || canvas.height !== height;
-  if (needResize) {
-    renderer.setSize(width, height, false);
-  }
-  return needResize;
-}
-
 function easeInOutQuart(x: number): number {
   return x < 0.5 ? 8 * x * x * x * x : 1 - Math.pow(-2 * x + 2, 4) / 2;
 }
@@ -111,23 +131,25 @@ function transitionAnimation(t) {
   mat2.uniforms.speed.value = e;
 }
 
+function resizeRendererToDisplaySize(renderer) {
+  const canvas = renderer.domElement;
+  const pixelRatio = window.devicePixelRatio;
+  const width = canvas.clientWidth;
+  const height = canvas.clientHeight;
+  const needResize = canvas.width !== width || canvas.height !== height;
+  if (needResize) {
+    renderer.setSize(width, height, false);
+  }
+  return needResize;
+}
+
 function addCamera() {
   camera = new THREE.PerspectiveCamera(45, 800 / 600, 0.1, 100);
-  camera.position.set(0, 0, 10);
+  camera.position.set(0, 0, 0);
   camera.aspect = canvas.clientWidth / canvas.clientHeight;
 }
 
-(async function () {
-  const canvas: any = document.querySelector('#c');
-  const renderer = new THREE.WebGLRenderer({ canvas });
-  renderer.setSize(800, 600);
-  document.body.appendChild(renderer.domElement);
-  scene = new THREE.Scene();
-  const camera = new THREE.PerspectiveCamera(45, 800 / 600, 1, 10000);
-  camera.position.set(0, 0, 1000);
-  geometry = new THREE.PlaneGeometry(600, 600);
-  //const material = new THREE.MeshPhongMaterial({ color: 0xff0000 });
-
+async function addPlane() {
   const loader = new THREE.TextureLoader();
   texture1 = await Promise.resolve(loader.loadAsync('./resources/test2.jpg'));
   texture2 = await Promise.resolve(loader.loadAsync('./resources/test1.jpg'));
@@ -162,30 +184,17 @@ function addCamera() {
     fragmentShader: glitchTransitionFrag2,
   });
 
+  geometry = new THREE.PlaneGeometry(8, 8);
   plane = new THREE.Mesh(geometry, mat1);
   plane.name = 'plane';
-  plane.position.z = -5;
+  plane.position.z = -10;
   scene.add(plane);
+}
 
-  clock = new THREE.Clock();
-  clock.start();
+(async function () {
+  init();
+  addCamera();
+  await addPlane();
   addGUI();
-
-  const tick = (): void => {
-    requestAnimationFrame(tick);
-    if (resizeRendererToDisplaySize(renderer)) {
-      const canvas = renderer.domElement;
-      camera.aspect = canvas.clientWidth / canvas.clientHeight;
-      camera.updateProjectionMatrix();
-    }
-
-    let time = performance.now() * 0.001;
-    time = Math.sin(time);
-    mat1.uniforms.time.value = time;
-    mat2.uniforms.time.value = time;
-
-    transitionAnimation(clock.getDelta() * 3);
-    renderer.render(scene, camera);
-  };
-  tick();
+  update();
 })();
