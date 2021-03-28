@@ -21,7 +21,7 @@ let gui: GUI,
   rt;
 
 const param = {
-  interpolationCount: 6.0,
+  interpolationCount: 7.0,
   stretchStrength: 0.0,
   transitionStrength: 0.0,
   transitionDirection: 0.0,
@@ -64,7 +64,7 @@ function update() {
   let time = performance.now() * 0.001;
   time = Math.sin(time);
 
-  transitionAnimation(clock.getDelta() * 1.5);
+  transitionAnimation(clock.getDelta() * 1.25);
   renderer.setRenderTarget(rt);
   renderer.render(scene1, camera);
   renderer.setRenderTarget(null);
@@ -85,7 +85,7 @@ function addEffect() {
       stretchStrength: { value: 0.0 },
       transitionStrength: { value: 0.0 },
       transitionDirection: { value: 0.0 },
-      interpolationCount: { value: 5.0 },
+      interpolationCount: { value: 7.0 },
       uClearColor: { value: new THREE.Vector3(0, 0, 0) },
     },
     vertexShader: simpleVert,
