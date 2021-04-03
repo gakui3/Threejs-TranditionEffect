@@ -21,11 +21,12 @@ let gui: GUI,
   rt;
 
 const param = {
-  interpolationCount: 7.0,
+  interpolationCount: 3.0,
   stretchStrength: 0.0,
   transitionStrength: 0.0,
   transitionDirection: 0.0,
   loopTransition: false,
+  lineAmount: -0.5,
 };
 
 function init() {
@@ -37,9 +38,9 @@ function init() {
   //renderer.setSize(800, 600);
   document.body.appendChild(renderer.domElement);
   scene1 = new THREE.Scene();
-  scene1.background = new THREE.Color(0x424242);
+  scene1.background = new THREE.Color(0x000000);
   scene2 = new THREE.Scene();
-  scene2.background = new THREE.Color(0x424242);
+  scene2.background = new THREE.Color(0x000000);
   clock = new THREE.Clock();
   clock.start();
 
@@ -65,6 +66,7 @@ function update() {
   time = Math.sin(time);
 
   transitionAnimation(clock.getDelta() * 1.25);
+  colorPass.uniforms.time.value = clock.getElapsedTime();
   renderer.setRenderTarget(rt);
   renderer.render(scene1, camera);
   renderer.setRenderTarget(null);
@@ -85,8 +87,9 @@ function addEffect() {
       stretchStrength: { value: 0.0 },
       transitionStrength: { value: 0.0 },
       transitionDirection: { value: 0.0 },
-      interpolationCount: { value: 7.0 },
-      uClearColor: { value: new THREE.Vector3(0, 0, 0) },
+      interpolationCount: { value: 3.0 },
+      uClearColor: { value: new THREE.Vector3(1, 1, 1) },
+      lineAmount: { value: -0.5 },
     },
     vertexShader: simpleVert,
     fragmentShader: pixelBlur,
@@ -120,6 +123,10 @@ function addGUI() {
   gui.add(param, 'loopTransition').onChange(() => {
     //param.transitionAmount = 0;
     animationTime = 0;
+  });
+
+  gui.add(param, 'lineAmount', -1.0, 1.0).onChange((value) => {
+    colorPass.uniforms.lineAmount.value = value;
   });
 }
 

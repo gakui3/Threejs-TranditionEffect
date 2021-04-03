@@ -14,6 +14,7 @@ uniform float transitionStrength;
 uniform float transitionDirection; 
 uniform float interpolationCount; 
 uniform vec3 uClearColor; 
+uniform float lineAmount;
 
 varying vec3 pos;
 varying vec2 texcoord;
@@ -41,7 +42,9 @@ vec4 getStretchColor(sampler2D textureSample)
     // Fragment start and end 
     float fragmentStart = floor(x * interpolationCount) / interpolationCount; 
     float fragmentEnd = ceil(x * interpolationCount) / interpolationCount; 
+    vec4 originalCol = texture2D(textureSample, texcoord);
 
+    float a = step(lineAmount, snoise2D(vec2(1.0, y*80.0)));
 
     float fragmentProgress = (x - fragmentStart) / fragmentAmplitude; 
  
@@ -64,7 +67,8 @@ vec4 getStretchColor(sampler2D textureSample)
     } 
  
     vec4 color = mix(fragmentStartColor, fragmentEndColor, fragmentProgress); 
- 
+    color = mix(color, originalCol, a);
+
     return color; 
 } 
 
