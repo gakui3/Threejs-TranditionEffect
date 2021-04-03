@@ -27,6 +27,7 @@ const param = {
   transitionDirection: 0.0,
   loopTransition: false,
   lineAmount: -0.5,
+  lineNoiseSeed: 1.0,
 };
 
 function init() {
@@ -90,6 +91,7 @@ function addEffect() {
       interpolationCount: { value: 3.0 },
       uClearColor: { value: new THREE.Vector3(1, 1, 1) },
       lineAmount: { value: -0.5 },
+      lineNoiseSeed: { value: 1.0 },
     },
     vertexShader: simpleVert,
     fragmentShader: pixelBlur,
@@ -127,6 +129,10 @@ function addGUI() {
 
   gui.add(param, 'lineAmount', -1.0, 1.0).onChange((value) => {
     colorPass.uniforms.lineAmount.value = value;
+  });
+
+  gui.add(param, 'lineNoiseSeed', -10.0, 10.0).onChange((value) => {
+    colorPass.uniforms.lineNoiseSeed.value = value;
   });
 }
 
