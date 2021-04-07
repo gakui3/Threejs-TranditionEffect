@@ -21,7 +21,7 @@ let gui,
   transitionTexture,
   transitionMat,
   currentMat,
-  transitionTexIndex = 0,
+  transitionTexIndex = 1,
   canTransition = true;
 
 const param = {
@@ -35,6 +35,11 @@ const param = {
   onClick: function () {
     transition();
   },
+  transitionLineAmount: -0.35,
+  lineIncreaseTime: 1000,
+  lineDecreaseTime: 500,
+  transitionTime: 1400,
+  startTransitionDelayTime: 500,
 };
 
 function init() {
@@ -140,18 +145,28 @@ function addGUI() {
   });
 
   gui.add(param, 'onClick').name('click this or press [t] key to start transition');
+  const folder = gui.addFolder('for transition');
+  folder.add(param, 'transitionLineAmount', -1.0, 1.0).onChange((value) => {
+    param.transitionLineAmount = value;
+  });
+  folder.add(param, 'lineIncreaseTime', 500, 1500).onChange((value) => {
+    param.LineIncreaseTime = value;
+  });
+  folder.add(param, 'lineDecreaseTime', 100, 1000).onChange((value) => {
+    param.LineDecreaseTime = value;
+  });
+  folder.add(param, 'transitionTime', 500, 2000).onChange((value) => {
+    param.transitionTime = value;
+  });
+  folder.add(param, 'startTransitionDelayTime', 100, 1000).onChange((value) => {
+    param.startTransitionDelayTime = value;
+  });
 }
 
 function transition() {
   if (!canTransition) return;
 
   canTransition = false;
-  transitionTexIndex += 1;
-  if (transitionTexIndex > textures.length - 1) {
-    transitionTexIndex = 0;
-  }
-
-  transitionMat.map = textures[transitionTexIndex];
   colorPass.uniforms.lineNoiseSeed.value = Math.random() * 10;
 
   const p = {
@@ -159,14 +174,14 @@ function transition() {
     lineAmount: -1.0,
   };
   const lineTween = new TWEEN.Tween(p)
-    .to({ lineAmount: -0.5 }, 1000)
+    .to({ lineAmount: param.transitionLineAmount }, param.lineIncreaseTime)
     .easing(TWEEN.Easing.Quadratic.Out)
     .onUpdate(() => {
       colorPass.uniforms.lineAmount.value = p.lineAmount;
     })
     .onComplete(() => {
       const finishTween = new TWEEN.Tween(p)
-        .to({ lineAmount: -1.0 }, 500)
+        .to({ lineAmount: -1.0 }, param.LineDecreaseTime)
         .easing(TWEEN.Easing.Quadratic.Out)
         .onUpdate(() => {
           colorPass.uniforms.lineAmount.value = p.lineAmount;
@@ -176,7 +191,7 @@ function transition() {
     .start();
 
   const transitionTween = new TWEEN.Tween(p)
-    .to({ transitionStrength: 1.0 }, 1400)
+    .to({ transitionStrength: 1.0 }, param.transitionTime)
     .easing(TWEEN.Easing.Quartic.Out)
     .onUpdate(() => {
       colorPass.uniforms.transitionStrength.value = p.transitionStrength;
@@ -185,8 +200,14 @@ function transition() {
       colorPass.uniforms.transitionStrength.value = 0.0;
       currentMat.map = textures[transitionTexIndex];
       canTransition = true;
+
+      transitionTexIndex += 1;
+      if (transitionTexIndex > textures.length - 1) {
+        transitionTexIndex = 0;
+      }
+      transitionMat.map = textures[transitionTexIndex];
     })
-    .delay(500)
+    .delay(param.startTransitionDelayTime)
     .start();
 }
 
