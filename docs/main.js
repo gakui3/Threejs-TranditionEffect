@@ -8,7 +8,6 @@ import { RenderPass } from 'three/examples/jsm/postprocessing/RenderPass.js';
 import { ShaderPass } from 'three/examples/jsm/postprocessing/ShaderPass.js';
 
 let gui,
-  animationTime,
   clock,
   scene1,
   scene2,
@@ -177,8 +176,8 @@ function transition() {
     .start();
 
   const transitionTween = new TWEEN.Tween(p)
-    .to({ transitionStrength: 1.0 }, 1000)
-    .easing(TWEEN.Easing.Quadratic.Out)
+    .to({ transitionStrength: 1.0 }, 1400)
+    .easing(TWEEN.Easing.Quartic.Out)
     .onUpdate(() => {
       colorPass.uniforms.transitionStrength.value = p.transitionStrength;
     })
