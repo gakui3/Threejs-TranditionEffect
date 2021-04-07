@@ -4,13 +4,13 @@ module.exports = {
   mode: 'development',
 
   // メインとなるJavaScriptファイル（エントリーポイント）
-  entry: './docs/main.ts',
+  entry: './docs/main.js',
   // ファイルの出力設定
   output: {
     //  出力ファイルのディレクトリ名
     path: `${__dirname}/docs`,
     // 出力ファイル名
-    filename: 'main.js',
+    filename: 'dest.js',
   },
   module: {
     rules: [
