@@ -6,7 +6,7 @@ precision highp int;
 
 uniform vec3 color;
 uniform sampler2D tDiffuse;
-uniform sampler2D rt0;
+uniform sampler2D transitionTexture;
 uniform float time;
 uniform vec2 stretchNoiseMultiplier; 
 uniform float stretchStrength; 
@@ -98,11 +98,11 @@ void main() {
     //basecolor
     //vec2 uv = vec2(snoise2D(vec2(time, pos.x)), snoise2D(vec2(time, pos.y)));
     vec3 baseColorA = texture2D(tDiffuse, texcoord).rgb;
-    vec3 baseColorB = texture2D(rt0, texcoord).rgb; 
+    vec3 baseColorB = texture2D(transitionTexture, texcoord).rgb; 
     vec3 baseColor = mix(baseColorA, baseColorB, transitionMap); 
 
     vec3 stretchColorA = getStretchColor(tDiffuse).rgb; 
-    vec3 stretchColorB = getStretchColor(rt0).rgb; 
+    vec3 stretchColorB = getStretchColor(transitionTexture).rgb; 
     vec3 stretchColor = mix(stretchColorA, stretchColorB, transitionMap); 
 
     col.rgb = baseColor * (1.0-stretchMap) + stretchColor * stretchMap;

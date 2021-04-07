@@ -1,11 +1,11 @@
 import * as THREE from 'three';
+import * as TWEEN from '@tweenjs/tween.js';
 import simpleVert from './shaders/simple.vert';
 import pixelBlur from './shaders/pixelBlur.frag';
 import { GUI } from 'three/examples/jsm/libs/dat.gui.module';
 import { EffectComposer } from 'three/examples/jsm/postprocessing/EffectComposer.js';
 import { RenderPass } from 'three/examples/jsm/postprocessing/RenderPass.js';
 import { ShaderPass } from 'three/examples/jsm/postprocessing/ShaderPass.js';
-import { Tween, Easing, Sequence } from '@tweenjs/tween.js';
 
 let gui,
   animationTime,
@@ -18,16 +18,24 @@ let gui,
   composer,
   effect,
   colorPass,
-  rt;
+  textures = [],
+  transitionTexture,
+  transitionMat,
+  currentMat,
+  transitionTexIndex = 0,
+  canTransition = true;
 
 const param = {
   interpolationCount: 3.0,
-  stretchStrength: 0.0,
+  stretchStrength: 1.0,
   transitionStrength: 0.0,
   transitionDirection: 0.0,
   loopTransition: false,
-  lineAmount: -0.5,
+  lineAmount: -1.0,
   lineNoiseSeed: 1.0,
+  onClick: function () {
+    transition();
+  },
 };
 
 function init() {
@@ -45,16 +53,19 @@ function init() {
   clock = new THREE.Clock();
   clock.start();
 
-  rt = new THREE.WebGLRenderTarget(canvas.clientWidth, canvas.clientHeight, {
+  transitionTexture = new THREE.WebGLRenderTarget(canvas.clientWidth, canvas.clientHeight, {
     magFilter: THREE.NearestFilter,
     minFilter: THREE.NearestFilter,
     wrapS: THREE.ClampToEdgeWrapping,
     wrapT: THREE.ClampToEdgeWrapping,
   });
+
+  document.addEventListener('keypress', onKeyPress, false);
 }
 
 function update() {
   requestAnimationFrame(update);
+  TWEEN.update();
 
   if (resizeRendererToDisplaySize(renderer)) {
     const canvas = renderer.domElement;
@@ -66,9 +77,8 @@ function update() {
   let time = performance.now() * 0.001;
   time = Math.sin(time);
 
-  transitionAnimation(clock.getDelta() * 1.25);
   colorPass.uniforms.time.value = clock.getElapsedTime();
-  renderer.setRenderTarget(rt);
+  renderer.setRenderTarget(transitionTexture);
   renderer.render(scene1, camera);
   renderer.setRenderTarget(null);
 
@@ -82,15 +92,15 @@ function addEffect() {
   effect = {
     uniforms: {
       tDiffuse: { value: null },
-      rt0: { value: rt },
+      transitionTexture: { value: transitionTexture },
       time: { value: 1.0 },
       stretchNoiseMultiplier: { value: new THREE.Vector2(1, 1) },
-      stretchStrength: { value: 0.0 },
+      stretchStrength: { value: 1.0 },
       transitionStrength: { value: 0.0 },
       transitionDirection: { value: 0.0 },
       interpolationCount: { value: 3.0 },
       uClearColor: { value: new THREE.Vector3(1, 1, 1) },
-      lineAmount: { value: -0.5 },
+      lineAmount: { value: -1.0 },
       lineNoiseSeed: { value: 1.0 },
     },
     vertexShader: simpleVert,
@@ -104,7 +114,7 @@ function addEffect() {
 
 function addGUI() {
   gui = new GUI();
-  gui.width = 300;
+  gui.width = 600;
 
   gui.add(param, 'stretchStrength', 0.0, 1.0).onChange((value) => {
     colorPass.uniforms.stretchStrength.value = value;
@@ -122,11 +132,6 @@ function addGUI() {
     colorPass.uniforms.transitionDirection.value = value;
   });
 
-  gui.add(param, 'loopTransition').onChange(() => {
-    //param.transitionAmount = 0;
-    animationTime = 0;
-  });
-
   gui.add(param, 'lineAmount', -1.0, 1.0).onChange((value) => {
     colorPass.uniforms.lineAmount.value = value;
   });
@@ -134,21 +139,63 @@ function addGUI() {
   gui.add(param, 'lineNoiseSeed', -10.0, 10.0).onChange((value) => {
     colorPass.uniforms.lineNoiseSeed.value = value;
   });
+
+  gui.add(param, 'onClick').name('click this or press [t] key to start transition');
 }
 
-function easeInOutQuart(x) {
-  return x < 0.5 ? 8 * x * x * x * x : 1 - Math.pow(-2 * x + 2, 4) / 2;
+function transition() {
+  if (!canTransition) return;
+
+  canTransition = false;
+  transitionTexIndex += 1;
+  if (transitionTexIndex > textures.length - 1) {
+    transitionTexIndex = 0;
+  }
+
+  transitionMat.map = textures[transitionTexIndex];
+  colorPass.uniforms.lineNoiseSeed.value = Math.random() * 10;
+
+  const p = {
+    transitionStrength: 0.0,
+    lineAmount: -1.0,
+  };
+  const lineTween = new TWEEN.Tween(p)
+    .to({ lineAmount: -0.5 }, 1000)
+    .easing(TWEEN.Easing.Quadratic.Out)
+    .onUpdate(() => {
+      colorPass.uniforms.lineAmount.value = p.lineAmount;
+    })
+    .onComplete(() => {
+      const finishTween = new TWEEN.Tween(p)
+        .to({ lineAmount: -1.0 }, 500)
+        .easing(TWEEN.Easing.Quadratic.Out)
+        .onUpdate(() => {
+          colorPass.uniforms.lineAmount.value = p.lineAmount;
+        })
+        .start();
+    })
+    .start();
+
+  const transitionTween = new TWEEN.Tween(p)
+    .to({ transitionStrength: 1.0 }, 1000)
+    .easing(TWEEN.Easing.Quadratic.Out)
+    .onUpdate(() => {
+      colorPass.uniforms.transitionStrength.value = p.transitionStrength;
+    })
+    .onComplete(() => {
+      colorPass.uniforms.transitionStrength.value = 0.0;
+      currentMat.map = textures[transitionTexIndex];
+      canTransition = true;
+    })
+    .delay(500)
+    .start();
 }
 
-function transitionAnimation(t) {
-  if (!param.loopTransition) return;
-
-  animationTime += t;
-  let a = Math.sin(animationTime);
-  let b = (a + 1.0) * 0.5;
-
-  colorPass.uniforms.transitionStrength.value = easeInOutQuart(b);
-  colorPass.uniforms.stretchStrength.value = easeInOutQuart(b * 2.0);
+function onKeyPress(event) {
+  var keyCode = event.which;
+  if (keyCode == 116) {
+    transition();
+  }
 }
 
 function resizeRendererToDisplaySize(renderer) {
@@ -171,25 +218,26 @@ function addCamera() {
 
 async function addPlane() {
   const loader = new THREE.TextureLoader();
-  const texture1 = await Promise.resolve(loader.loadAsync('./resources/test1.jpg'));
-  const texture2 = await Promise.resolve(loader.loadAsync('./resources/test2.jpg'));
+  textures.push(await Promise.resolve(loader.loadAsync('./resources/test1.jpg')));
+  textures.push(await Promise.resolve(loader.loadAsync('./resources/test2.jpg')));
+  textures.push(await Promise.resolve(loader.loadAsync('./resources/test3.jpeg')));
 
-  const mat1 = new THREE.MeshBasicMaterial({
-    map: texture1,
+  transitionMat = new THREE.MeshBasicMaterial({
+    map: textures[1],
   });
 
-  const mat2 = new THREE.MeshBasicMaterial({
-    map: texture2,
+  currentMat = new THREE.MeshBasicMaterial({
+    map: textures[0],
   });
 
   const geometry = new THREE.PlaneGeometry(5, 5, 10, 10);
 
-  const plane1 = new THREE.Mesh(geometry, mat1);
+  const plane1 = new THREE.Mesh(geometry, transitionMat);
   plane1.name = 'plane';
   plane1.position.z = 0;
   scene1.add(plane1);
 
-  const plane2 = new THREE.Mesh(geometry, mat2);
+  const plane2 = new THREE.Mesh(geometry, currentMat);
   plane2.name = 'plane';
   plane2.position.z = 0;
   scene2.add(plane2);
