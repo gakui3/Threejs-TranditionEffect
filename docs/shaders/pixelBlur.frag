@@ -103,7 +103,8 @@ void main() {
 
     vec3 stretchColorA = getStretchColor(tDiffuse).rgb; 
     vec3 stretchColorB = getStretchColor(transitionTexture).rgb; 
-    vec3 stretchColor = mix(stretchColorA, stretchColorB, transitionMap); 
+    //vec3 stretchColor = mix(stretchColorA, stretchColorB, transitionMap); 
+    vec3 stretchColor = stretchColorA;
 
     col.rgb = baseColor * (1.0-stretchMap) + stretchColor * stretchMap;
 

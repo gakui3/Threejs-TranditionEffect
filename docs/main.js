@@ -6,6 +6,7 @@ import { GUI } from 'three/examples/jsm/libs/dat.gui.module';
 import { EffectComposer } from 'three/examples/jsm/postprocessing/EffectComposer.js';
 import { RenderPass } from 'three/examples/jsm/postprocessing/RenderPass.js';
 import { ShaderPass } from 'three/examples/jsm/postprocessing/ShaderPass.js';
+import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader';
 
 let gui,
   clock,
@@ -22,10 +23,11 @@ let gui,
   transitionMat,
   currentMat,
   transitionTexIndex = 1,
-  canTransition = true;
+  canTransition = true,
+  gltfLoader;
 
 const param = {
-  interpolationCount: 3.0,
+  interpolationCount: 4.2,
   stretchStrength: 1.0,
   transitionStrength: 0.0,
   transitionDirection: 0.0,
@@ -65,6 +67,8 @@ function init() {
   });
 
   document.addEventListener('keypress', onKeyPress, false);
+
+  gltfLoader = new GLTFLoader();
 }
 
 function update() {
@@ -102,7 +106,7 @@ function addEffect() {
       stretchStrength: { value: 1.0 },
       transitionStrength: { value: 0.0 },
       transitionDirection: { value: 0.0 },
-      interpolationCount: { value: 3.0 },
+      interpolationCount: { value: 4.2 },
       uClearColor: { value: new THREE.Vector3(1, 1, 1) },
       lineAmount: { value: -1.0 },
       lineNoiseSeed: { value: 1.0 },
@@ -120,32 +124,33 @@ function addGUI() {
   gui = new GUI();
   gui.width = 600;
 
-  gui.add(param, 'stretchStrength', 0.0, 1.0).onChange((value) => {
+  const params = gui.addFolder('effect parameter');
+
+  params.add(param, 'stretchStrength', 0.0, 1.0).onChange((value) => {
     colorPass.uniforms.stretchStrength.value = value;
   });
 
-  gui.add(param, 'transitionStrength', 0.0, 1.0).onChange((value) => {
+  params.add(param, 'transitionStrength', 0.0, 1.0).onChange((value) => {
     colorPass.uniforms.transitionStrength.value = value;
   });
 
-  gui.add(param, 'interpolationCount', 1.5, 10.0).onChange((value) => {
+  params.add(param, 'interpolationCount', 1.5, 10.0).onChange((value) => {
     colorPass.uniforms.interpolationCount.value = value;
   });
 
-  gui.add(param, 'transitionDirection', 0.0, 1.0).onChange((value) => {
+  params.add(param, 'transitionDirection', 0.0, 1.0).onChange((value) => {
     colorPass.uniforms.transitionDirection.value = value;
   });
 
-  gui.add(param, 'lineAmount', -1.0, 1.0).onChange((value) => {
+  params.add(param, 'lineAmount', -1.0, 1.0).onChange((value) => {
     colorPass.uniforms.lineAmount.value = value;
   });
 
-  gui.add(param, 'lineNoiseSeed', -10.0, 10.0).onChange((value) => {
+  params.add(param, 'lineNoiseSeed', -10.0, 10.0).onChange((value) => {
     colorPass.uniforms.lineNoiseSeed.value = value;
   });
 
-  gui.add(param, 'onClick').name('click this or press [t] key to start transition');
-  const folder = gui.addFolder('for transition');
+  const folder = gui.addFolder('transition parameter');
   folder.add(param, 'transitionLineAmount', -1.0, 1.0).onChange((value) => {
     param.transitionLineAmount = value;
   });
@@ -161,6 +166,8 @@ function addGUI() {
   folder.add(param, 'startTransitionDelayTime', 100, 1000).onChange((value) => {
     param.startTransitionDelayTime = value;
   });
+
+  gui.add(param, 'onClick').name('click this or press [t] key to start transition');
 }
 
 function transition() {
@@ -187,27 +194,8 @@ function transition() {
           colorPass.uniforms.lineAmount.value = p.lineAmount;
         })
         .start();
-    })
-    .start();
-
-  const transitionTween = new TWEEN.Tween(p)
-    .to({ transitionStrength: 1.0 }, param.transitionTime)
-    .easing(TWEEN.Easing.Quartic.Out)
-    .onUpdate(() => {
-      colorPass.uniforms.transitionStrength.value = p.transitionStrength;
-    })
-    .onComplete(() => {
-      colorPass.uniforms.transitionStrength.value = 0.0;
-      currentMat.map = textures[transitionTexIndex];
       canTransition = true;
-
-      transitionTexIndex += 1;
-      if (transitionTexIndex > textures.length - 1) {
-        transitionTexIndex = 0;
-      }
-      transitionMat.map = textures[transitionTexIndex];
     })
-    .delay(param.startTransitionDelayTime)
     .start();
 }
 
@@ -250,7 +238,7 @@ async function addPlane() {
     map: textures[0],
   });
 
-  const geometry = new THREE.PlaneGeometry(5, 5, 10, 10);
+  const geometry = new THREE.PlaneGeometry(0, 0, 10, 10);
 
   const plane1 = new THREE.Mesh(geometry, transitionMat);
   plane1.name = 'plane';
@@ -263,10 +251,20 @@ async function addPlane() {
   scene2.add(plane2);
 }
 
+function addModel() {
+  gltfLoader.load('./resources/models/210507__t5.glb', function (gltf) {
+    var model = gltf.scene;
+    model.scale.set(0.015, 0.015, 0.015);
+    model.position.set(0, -2, 0);
+    scene2.add(model);
+  });
+}
+
 (async function () {
   init();
   addCamera();
-  await addPlane();
+  // await addPlane();
+  addModel();
   addEffect();
   addGUI();
   update();
